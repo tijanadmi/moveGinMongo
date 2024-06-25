@@ -10,6 +10,7 @@ import (
 type Repertoire struct {
 	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	MovieID         primitive.ObjectID `bson:"movieId,omitempty" json:"movieId,omitempty"`
+	DateSt          string             `bson:"dateSt,omitempty" json:"dateSt,omitempty"`
 	Date            time.Time          `bson:"date,omitempty" json:"date,omitempty"`
 	Time            string             `bson:"time,omitempty" json:"time,omitempty"`
 	Hall            string             `bson:"hall,omitempty" json:"hall,omitempty"`

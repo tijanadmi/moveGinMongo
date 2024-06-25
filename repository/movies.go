@@ -14,17 +14,17 @@ import (
 // MovieModel sa CRUD operacijama
 // MovieClient is the client responsible for querying MongoDB
 type MovieClient struct {
-	col *mongo.Collection
+	Col *mongo.Collection
 }
 
 func (c *MovieClient) InitMovies(ctx context.Context) {
-	setupIndexes(ctx, c.col, "title")
+	setupIndexes(ctx, c.Col, "title")
 }
 
 // AddMovie adds a new movie to the MongoDB collection
 func (c *MovieClient) AddMovie(ctx context.Context, movie *models.Movie) error {
 	movie.ID = primitive.NewObjectID()
-	_, err := c.col.InsertOne(ctx, movie)
+	_, err := c.Col.InsertOne(ctx, movie)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new movie: %w", err))
 		return err
@@ -35,7 +35,7 @@ func (c *MovieClient) AddMovie(ctx context.Context, movie *models.Movie) error {
 // ListMovies returns all movies from the MongoDB collection
 func (c *MovieClient) ListMovies(ctx context.Context) ([]models.Movie, error) {
 	movies := make([]models.Movie, 0)
-	cur, err := c.col.Find(ctx, bson.M{})
+	cur, err := c.Col.Find(ctx, bson.M{})
 	if err != nil {
 		log.Print(fmt.Errorf("could not get all movies: %w", err))
 		return nil, err
@@ -53,7 +53,7 @@ func (c *MovieClient) ListMovies(ctx context.Context) ([]models.Movie, error) {
 func (c *MovieClient) GetMovie(ctx context.Context, id string) (models.Movie, error) {
 	var movie models.Movie
 	objID, _ := primitive.ObjectIDFromHex(id)
-	res := c.col.FindOne(ctx, bson.M{"_id": objID})
+	res := c.Col.FindOne(ctx, bson.M{"_id": objID})
 	if res.Err() != nil {
 		if res.Err() == mongo.ErrNoDocuments {
 			return movie, nil
@@ -72,7 +72,7 @@ func (c *MovieClient) GetMovie(ctx context.Context, id string) (models.Movie, er
 // UpdateMovie updates a movie by ID in the MongoDB collection
 func (c *MovieClient) UpdateMovie(ctx context.Context, id string, movie models.Movie) (int, error) {
 	objID, _ := primitive.ObjectIDFromHex(id)
-	res, err := c.col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
+	res, err := c.Col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
 		{"$set", bson.D{
 			{"title", movie.Title},
 			{"duration", movie.Duration},
@@ -96,7 +96,7 @@ func (c *MovieClient) UpdateMovie(ctx context.Context, id string, movie models.M
 // DeleteMovie deletes a movie by ID from the MongoDB collection
 func (c *MovieClient) DeleteMovie(ctx context.Context, id string) (int, error) {
 	objID, _ := primitive.ObjectIDFromHex(id)
-	res, err := c.col.DeleteOne(ctx, bson.M{"_id": objID})
+	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the movie with id [%s]: %w", id, err))
 		return 0, err
@@ -110,7 +110,7 @@ func (c *MovieClient) SearchMovies(ctx context.Context, movieId string) ([]model
 	movies := make([]models.Movie, 0)
 	fmt.Println(movieId)
 	// Provera inicijalizacije kolekcije
-	if c.col == nil {
+	if c.Col == nil {
 		log.Print(fmt.Errorf("collection is not initialized:"))
 		return nil, fmt.Errorf("collection is not initialized")
 	}
@@ -159,7 +159,7 @@ func (c *MovieClient) SearchMovies(ctx context.Context, movieId string) ([]model
 	}
 
 	// Izvršavanje agregacije
-	cursor, err := c.col.Aggregate(ctx, pipeline)
+	cursor, err := c.Col.Aggregate(ctx, pipeline)
 	if err != nil {
 		log.Print(fmt.Errorf("could not aggregate movies: %w", err))
 		return nil, err

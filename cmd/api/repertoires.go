@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tijanadmi/moveginmongo/models"
+	"github.com/tijanadmi/moveginmongo/util"
 )
 
 func (server *Server) GetRepertoire(ctx *gin.Context) {
@@ -57,7 +58,18 @@ func (server *Server) AddRepertoire(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println("add handler", repertoire.NumOfResTickets)
+	// Convert date string to time.Time
+	dateValue, err := util.ParseDate(repertoire.DateSt)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Error parsing date",
+		})
+		return
+	}
+
+	// Update the date field with the parsed time.Time value
+	repertoire.Date = dateValue
+
 	if err := server.store.Repertoire.AddRepertoire(ctx, repertoire); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

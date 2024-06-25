@@ -18,14 +18,14 @@ import (
 
 // BooksClient is the client responsible for querying mongodb
 type UsersClient struct {
-	col *mongo.Collection
+	Col *mongo.Collection
 }
 
 // Get returns a user by username
 func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	var dbUser models.User
 
-	res := c.col.FindOne(ctx, bson.M{"username": username})
+	res := c.Col.FindOne(ctx, bson.M{"username": username})
 	if res.Err() != nil {
 		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 			return &dbUser, res.Err()
@@ -48,10 +48,10 @@ func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*
 
 // AddHall adds a new hall to the MongoDB collection
 func (c *UsersClient) InsertUser(ctx context.Context, user *models.User) error {
-	user.DateOfCreation=time.Now()
-	user.DateOfLastUpdate=time.Now()
-	
-	_, err := c.col.InsertOne(ctx, user)
+	user.DateOfCreation = time.Now()
+	user.DateOfLastUpdate = time.Now()
+
+	_, err := c.Col.InsertOne(ctx, user)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new user: %w", err))
 		return err
@@ -63,7 +63,7 @@ func (c *UsersClient) InsertUser(ctx context.Context, user *models.User) error {
 // func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 //     var user models.User
 //     filter := bson.M{"username": username}
-//     err := c.col.FindOne(ctx, filter).Decode(&user)
+//     err := c.Col.FindOne(ctx, filter).Decode(&user)
 //     if err == mongo.ErrNoDocuments {
 //         return nil, nil // Vraća nil ako korisnik nije pronađen
 //     }

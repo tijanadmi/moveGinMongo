@@ -54,6 +54,7 @@ func (server *Server) setupRouter() {
 	router.PUT("/halls/:id", server.UpdateHall)
 	router.POST("/halls", server.InsertHall)
 	router.DELETE("/halls/:id", server.DeleteHall)
+	router.POST("/reservation", server.AddReservation)
 
 	//router.GET("/movies/:id", server.searchMovies)
 

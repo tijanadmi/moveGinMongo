@@ -6,26 +6,30 @@ import (
 
 // MongoClient combines all collection clients
 type MongoClient struct {
-	Hall       HallClient
-	Movie      MovieClient
-	Repertoire RepertoireClient
-	Users      UsersClient
+	Hall        HallClient
+	Movie       MovieClient
+	Repertoire  RepertoireClient
+	Reservation ReservationClient
+	Users       UsersClient
 }
 
 // NewMongoClient initializes the MongoDB clients and sets up their collections
 func NewMongoClient(client *mongo.Client) *MongoClient {
 	return &MongoClient{
 		Hall: HallClient{
-			col: getCollection(client, "halls"),
+			Col: getCollection(client, "halls"),
 		},
 		Movie: MovieClient{
-			col: getCollection(client, "movies"),
+			Col: getCollection(client, "movies"),
 		},
 		Repertoire: RepertoireClient{
-			col: getCollection(client, "repertoires"),
+			Col: getCollection(client, "repertoires"),
+		},
+		Reservation: ReservationClient{
+			Col: getCollection(client, "reservations"),
 		},
 		Users: UsersClient{
-			col: getCollection(client, "users"),
+			Col: getCollection(client, "users"),
 		},
 	}
 }

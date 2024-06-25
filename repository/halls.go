@@ -13,17 +13,17 @@ import (
 
 // HallClient is the client responsible for querying MongoDB
 type HallClient struct {
-	col *mongo.Collection
+	Col *mongo.Collection
 }
 
 func (c *HallClient) InitHalls(ctx context.Context) {
-	setupIndexes(ctx, c.col, "name")
+	setupIndexes(ctx, c.Col, "name")
 }
 
 // AddHall adds a new hall to the MongoDB collection
 func (c *HallClient) InsertHall(ctx context.Context, hall *models.Hall) error {
 	hall.ID = primitive.NewObjectID()
-	_, err := c.col.InsertOne(ctx, hall)
+	_, err := c.Col.InsertOne(ctx, hall)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new hall: %w", err))
 		return err
@@ -34,7 +34,7 @@ func (c *HallClient) InsertHall(ctx context.Context, hall *models.Hall) error {
 // ListHalls returns all halls from the MongoDB collection
 func (c *HallClient) ListHalls(ctx context.Context) ([]models.Hall, error) {
 	halls := make([]models.Hall, 0)
-	cur, err := c.col.Find(ctx, bson.M{})
+	cur, err := c.Col.Find(ctx, bson.M{})
 	if err != nil {
 		log.Print(fmt.Errorf("could not get all halls: %w", err))
 		return nil, err
@@ -53,12 +53,12 @@ func (c *HallClient) SearchHall(ctx context.Context, name string) ([]models.Hall
 	halls := make([]models.Hall, 0)
 
 	// Provera inicijalizacije kolekcije
-	if c.col == nil {
+	if c.Col == nil {
 		log.Print(fmt.Errorf("collection is not initialized:"))
 		return nil, fmt.Errorf("collection is not initialized")
 	}
 
-	cur, err := c.col.Find(ctx, bson.M{"name": name})
+	cur, err := c.Col.Find(ctx, bson.M{"name": name})
 
 	if err != nil {
 		log.Print(fmt.Errorf("could not get all halls: %w", err))
@@ -77,7 +77,7 @@ func (c *HallClient) SearchHall(ctx context.Context, name string) ([]models.Hall
 // UpdateHall updates a hall by ID in the MongoDB collection
 func (c *HallClient) UpdateHall(ctx context.Context, id string, hall models.Hall) (int, error) {
 	objID, _ := primitive.ObjectIDFromHex(id)
-	res, err := c.col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
+	res, err := c.Col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
 		{"$set", bson.D{
 			{"name", hall.Name},
 			{"rows", hall.Rows},
@@ -95,7 +95,7 @@ func (c *HallClient) UpdateHall(ctx context.Context, id string, hall models.Hall
 // DeleteHall deletes a hall by ID from the MongoDB collection
 func (c *HallClient) DeleteHall(ctx context.Context, id string) (int, error) {
 	objID, _ := primitive.ObjectIDFromHex(id)
-	res, err := c.col.DeleteOne(ctx, bson.M{"_id": objID})
+	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the hall with id [%s]: %w", id, err))
 		return 0, err
@@ -103,5 +103,3 @@ func (c *HallClient) DeleteHall(ctx context.Context, id string) (int, error) {
 
 	return int(res.DeletedCount), nil
 }
-
-
