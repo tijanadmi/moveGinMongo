@@ -19,7 +19,7 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP server and set up routing.
-func NewServer( config util.Config, store *db.MongoClient) (*Server, error) {
+func NewServer(config util.Config, store *db.MongoClient) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -29,7 +29,6 @@ func NewServer( config util.Config, store *db.MongoClient) (*Server, error) {
 		config:     config,
 		store:      store,
 		tokenMaker: tokenMaker,
-
 	}
 	/*if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
@@ -46,15 +45,17 @@ func (server *Server) setupRouter() {
 		v.RegisterValidation("currency", validCurrency)
 	}*/
 
-	
 	//router.POST("/users/login", server.loginUser)
 	router.POST("/users/login", server.getUserByUsername)
 	router.POST("/tokens/renew_access", server.renewAccessToken)
 	router.GET("/halls", server.listHalls)
-	router.PUT("/halls/:id",server.UpdateHall)
+	router.GET("/halls/:name", server.searchHall)
+	router.PUT("/halls/:id", server.UpdateHall)
 	router.POST("/halls", server.InsertHall)
 	router.DELETE("/halls/:id", server.DeleteHall)
-	
+
+	router.GET("/movies/:id", server.searchMovies)
+
 	// router.GET("/mrc/:id", server.getMrcById)
 	// router.GET("/mrc", server.listMrcs)
 	// router.GET("/tipprek/:id", server.getSTipPrekById)
@@ -71,12 +72,10 @@ func (server *Server) setupRouter() {
 	// router.GET("/interruptionofdelivery/:id", server.getDDNInterruptionOfDeliveryById)
 	// router.GET("/interruptionofproduction", server.listDDNInterruptionOfDeliveryP)
 	// router.GET("/interruptionofusers", server.listDDNInterruptionOfDeliveryK)
-	
 
 	//authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
-	
+
 	//authRoutes.GET("/accounts/:id", server.getAccount)
-	
 
 	server.router = router
 }

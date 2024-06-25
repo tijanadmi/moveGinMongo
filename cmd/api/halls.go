@@ -17,9 +17,9 @@ func (server *Server) listHalls(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, halls)
 }
-func (server *Server) SearchHall(ctx *gin.Context) {
-	name := ctx.Query("name")
+func (server *Server) searchHall(ctx *gin.Context) {
 
+	name := ctx.Param("name")
 	halls, err := server.store.Hall.SearchHall(ctx, name)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -75,7 +75,7 @@ func (server *Server) UpdateHall(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, hall)
+	ctx.JSON(http.StatusOK, hall)
 }
 
 func (server *Server) DeleteHall(ctx *gin.Context) {
@@ -91,12 +91,12 @@ func (server *Server) DeleteHall(ctx *gin.Context) {
 
 	if deletedCount == 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{
-			"error": "book not found",
+			"error": "hall not found",
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Book has been deleted",
+		"message": "Hall has been deleted",
 	})
 }

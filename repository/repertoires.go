@@ -14,15 +14,12 @@ import (
 
 // RepertoireClient is the client responsible for querying mongodb
 type RepertoireClient struct {
-	col   *mongo.Collection
+	col *mongo.Collection
 }
-
 
 func (c *RepertoireClient) InitRepertoire(ctx context.Context) {
 	setupIndexes(ctx, c.col, "name")
 }
-
-
 
 // AddRepertoire adds a new repertoire to the MongoDB collection
 func (c *RepertoireClient) AddRepertoire(ctx context.Context, repertoire *models.Repertoire) error {
