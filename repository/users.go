@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/tijanadmi/moveginmongo/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,10 +18,10 @@ import (
 
 // BooksClient is the client responsible for querying mongodb
 type UsersClient struct {
-	col    *mongo.Collection
+	col *mongo.Collection
 }
 
-//Get returns a user by username
+// Get returns a user by username
 func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
 	var dbUser models.User
 
@@ -45,7 +46,18 @@ func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*
 	return &dbUser, nil
 }
 
-
+// AddHall adds a new hall to the MongoDB collection
+func (c *UsersClient) InsertUser(ctx context.Context, user *models.User) error {
+	user.DateOfCreation=time.Now()
+	user.DateOfLastUpdate=time.Now()
+	
+	_, err := c.col.InsertOne(ctx, user)
+	if err != nil {
+		log.Print(fmt.Errorf("could not add new user: %w", err))
+		return err
+	}
+	return nil
+}
 
 // getUserByUsername traži korisnika po korisničkom imenu
 // func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {

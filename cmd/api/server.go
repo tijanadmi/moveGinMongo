@@ -45,16 +45,17 @@ func (server *Server) setupRouter() {
 		v.RegisterValidation("currency", validCurrency)
 	}*/
 
-	//router.POST("/users/login", server.loginUser)
-	router.POST("/users/login", server.getUserByUsername)
+	router.POST("/users/login", server.loginUser)
+	router.POST("/users", server.InsertUser)
+
 	router.POST("/tokens/renew_access", server.renewAccessToken)
-	router.GET("/halls", server.listHalls)
+	//router.GET("/halls", server.listHalls)
 	router.GET("/halls/:name", server.searchHall)
 	router.PUT("/halls/:id", server.UpdateHall)
 	router.POST("/halls", server.InsertHall)
 	router.DELETE("/halls/:id", server.DeleteHall)
 
-	router.GET("/movies/:id", server.searchMovies)
+	//router.GET("/movies/:id", server.searchMovies)
 
 	// router.GET("/mrc/:id", server.getMrcById)
 	// router.GET("/mrc", server.listMrcs)
@@ -73,9 +74,23 @@ func (server *Server) setupRouter() {
 	// router.GET("/interruptionofproduction", server.listDDNInterruptionOfDeliveryP)
 	// router.GET("/interruptionofusers", server.listDDNInterruptionOfDeliveryK)
 
-	//authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
-	//authRoutes.GET("/accounts/:id", server.getAccount)
+	authRoutes.GET("/halls", server.listHalls)
+
+	authRoutes.GET("/movies/:id", server.searchMovies)
+	authRoutes.GET("/movies", server.listMovies)
+	authRoutes.PUT("/movies/:id", server.UpdateMovie)
+	authRoutes.POST("/movies", server.InsertMovie)
+	authRoutes.DELETE("/movies/:id", server.DeleteMovie)
+
+	authRoutes.GET("/repertoires/:id", server.GetRepertoire)
+	authRoutes.GET("/repertoires/movie", server.GetAllRepertoireForMovie)
+	authRoutes.GET("/repertoires", server.ListRepertoires)
+	authRoutes.PUT("/repertoires/:id", server.UpdateRepertoire)
+	authRoutes.POST("/repertoires", server.AddRepertoire)
+	authRoutes.DELETE("/repertoires/:id", server.DeleteRepertoire)
+	authRoutes.DELETE("/repertoires/movie", server.DeleteRepertoireForMovie)
 
 	server.router = router
 }
