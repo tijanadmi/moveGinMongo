@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/tijanadmi/moveginmongo/cmd/api"
+	"github.com/tijanadmi/moveginmongo/docs" // Swagger generated files
 	db "github.com/tijanadmi/moveginmongo/repository"
 	"github.com/tijanadmi/moveginmongo/util"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,13 +23,25 @@ const (
 
 var client *mongo.Client
 
-func main(){
+// @securityDefinitions.apikey bearerAuth
+// @in header
+// @name Authorization
+// @TokenUrl /users/login  // dodato
+
+func main() {
+	// Swagger 2.0 Meta Information
+	docs.SwaggerInfo.Title = "TDI - Movie API"
+	docs.SwaggerInfo.Description = "TDI - Backend for Cinema app"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8080"
+	//docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+
 	config, err := util.LoadConfig(".")
-	if err != nil{
+	if err != nil {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
-	
 	if config.Environment == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
@@ -38,7 +51,7 @@ func main(){
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// create a context in order to disconnect
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -52,7 +65,7 @@ func main(){
 
 	mongoClient := db.NewMongoClient(client)
 	runGinServer(config, mongoClient)
-	
+
 }
 
 func connectToMongo(mongoURL string, username string, password string) (*mongo.Client, error) {

@@ -3,8 +3,11 @@ package api
 import (
 	"fmt"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	swaggerFiles "github.com/swaggo/files"     // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
 	db "github.com/tijanadmi/moveginmongo/repository"
 	"github.com/tijanadmi/moveginmongo/token"
 	"github.com/tijanadmi/moveginmongo/util"
@@ -41,43 +44,28 @@ func NewServer(config util.Config, store *db.MongoClient) (*Server, error) {
 func (server *Server) setupRouter() {
 	router := gin.Default()
 
-	/*if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("currency", validCurrency)
-	}*/
+	// Configure CORS
+	router.Use(cors.New(cors.Config{
+		//AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	router.POST("/users/login", server.loginUser)
 	router.POST("/users", server.InsertUser)
 
 	router.POST("/tokens/renew_access", server.renewAccessToken)
-	//router.GET("/halls", server.listHalls)
-	router.GET("/halls/:name", server.searchHall)
-	router.PUT("/halls/:id", server.UpdateHall)
-	router.POST("/halls", server.InsertHall)
-	router.DELETE("/halls/:id", server.DeleteHall)
-	router.POST("/reservation", server.AddReservation)
-
-	//router.GET("/movies/:id", server.searchMovies)
-
-	// router.GET("/mrc/:id", server.getMrcById)
-	// router.GET("/mrc", server.listMrcs)
-	// router.GET("/tipprek/:id", server.getSTipPrekById)
-	// router.GET("/tipprek", server.listTipPrek)
-	// router.GET("/vrprek/:id", server.getSVrPrekById)
-	// router.GET("/vrprek", server.listVrPrek)
-	// router.GET("/uzrokprek/:id", server.getSUzrokPrekById)
-	// router.GET("/uzrokprek", server.listUzrokPrek)
-	// router.GET("/poduzrokprek/:id", server.getSPoduzrokPrekById)
-	// router.GET("/poduzrokprek", server.listPoduzrokPrek)
-	// router.GET("/mernamesta/:id", server.getSMernaMestaById)
-	// router.GET("/mernamesta", server.listMernaMesta)
-
-	// router.GET("/interruptionofdelivery/:id", server.getDDNInterruptionOfDeliveryById)
-	// router.GET("/interruptionofproduction", server.listDDNInterruptionOfDeliveryP)
-	// router.GET("/interruptionofusers", server.listDDNInterruptionOfDeliveryK)
 
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
 	authRoutes.GET("/halls", server.listHalls)
+	authRoutes.GET("/halls/:name", server.searchHall)
+	authRoutes.PUT("/halls/:id", server.UpdateHall)
+	authRoutes.POST("/halls", server.InsertHall)
+	authRoutes.DELETE("/halls/:id", server.DeleteHall)
 
 	authRoutes.GET("/movies/:id", server.searchMovies)
 	authRoutes.GET("/movies", server.listMovies)
@@ -93,6 +81,11 @@ func (server *Server) setupRouter() {
 	authRoutes.DELETE("/repertoires/:id", server.DeleteRepertoire)
 	authRoutes.DELETE("/repertoires/movie", server.DeleteRepertoireForMovie)
 
+	authRoutes.POST("/reservation", server.AddReservation)
+	authRoutes.DELETE("/reservation/:id", server.CancelReservation)
+	authRoutes.GET("/reservationforuser", server.GetAllReservationsForUser)
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	server.router = router
 }
 

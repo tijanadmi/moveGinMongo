@@ -102,14 +102,20 @@ func (c *RepertoireClient) GetRepertoireByMovieDateTimeHall(ctx context.Context,
 }
 
 // GetRepertoire returns a repertoires based on its movieId
-func (c *RepertoireClient) GetAllRepertoireForMovie(ctx context.Context, movieId string) ([]models.Repertoire, error) {
+func (c *RepertoireClient) GetAllRepertoireForMovie(ctx context.Context, movieId string, startDate time.Time, endDate time.Time) ([]models.Repertoire, error) {
 	repertoires := make([]models.Repertoire, 0)
 
 	movieID, _ := primitive.ObjectIDFromHex(movieId)
-
-	cur, err := c.Col.Find(ctx, bson.M{"movieId": movieID})
+	filter := bson.M{
+		"movieId": movieID,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+	cur, err := c.Col.Find(ctx, filter)
 	if err != nil {
-		log.Print(fmt.Errorf("could not get all repertoires [%s]: %w", movieId, err))
+		log.Print(fmt.Errorf("could not get repertoires for period  %s - %s [%s]: %w", startDate, endDate, movieId, err))
 		return nil, err
 	}
 
