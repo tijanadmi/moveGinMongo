@@ -18,7 +18,7 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param  id path string true "Repertoire ID"
-// @Success 200 {array} models.Repertoires
+// @Success 200 {array} models.Repertoire
 // @Failure 400 {object} apiErrorResponse
 // @Failure 401 {object} apiErrorResponse
 // @Router /repertoires/{id} [get]
@@ -44,7 +44,7 @@ func (server *Server) GetRepertoire(ctx *gin.Context) {
 // @Param  movie_id query string true "Movie ID"
 // @Param  start_date query string true "Start Date"
 // @Param  end_date query string true "End Date"
-// @Success 200 {array} models.Repertoires
+// @Success 200 {array} models.Repertoire
 // @Failure 400 {object} apiErrorResponse
 // @Failure 401 {object} apiErrorResponse
 // @Router /repertoires/movie [get]
@@ -84,7 +84,7 @@ func (server *Server) GetAllRepertoireForMovie(ctx *gin.Context) {
 // @ID ListRepertoires
 // @Accept  json
 // @Produce  json
-// @Success 200 {array} models.Repertoires
+// @Success 200 {array} models.Repertoire
 // @Failure 400 {object} apiErrorResponse
 // @Failure 401 {object} apiErrorResponse
 // @Router /repertoires [get]
@@ -106,8 +106,8 @@ func (server *Server) ListRepertoires(ctx *gin.Context) {
 // @ID AddRepertoire
 // @Accept  json
 // @Produce  json
-// @Param repertoire body models.Repertoires true "Create repertoire"
-// @Success 201 {array} models.Repertoires
+// @Param repertoire body models.Repertoire true "Create repertoire"
+// @Success 201 {array} models.Repertoire
 // @Failure 400 {object} apiErrorResponse
 // @Failure 401 {object} apiErrorResponse
 // @Router /repertoires [post]
@@ -144,8 +144,8 @@ func (server *Server) AddRepertoire(ctx *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param  id path string true "Repertoire ID"
-// @Param repertoire body models.Repertoires true "Update repertoire"
-// @Success 200 {array} models.Repertoires
+// @Param repertoire body models.Repertoire true "Update repertoire"
+// @Success 200 {array} models.Repertoire
 // @Failure 400 {object} apiErrorResponse
 // @Failure 401 {object} apiErrorResponse
 // @Router /repertoires/{id} [put]
