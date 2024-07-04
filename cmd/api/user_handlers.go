@@ -161,7 +161,7 @@ func (server *Server) InsertUser(ctx *gin.Context) {
 		return
 	}
 
-	if err := server.store.Users.InsertUser(ctx, user); err != nil {
+	if user, err = server.store.Users.InsertUser(ctx, user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

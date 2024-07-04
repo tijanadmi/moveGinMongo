@@ -4,6 +4,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+
+
 // MongoClient combines all collection clients
 type MongoClient struct {
 	Hall        HallClient

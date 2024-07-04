@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+
+
 func getCollection(client *mongo.Client, col string) *mongo.Collection {
 
 	return client.Database("userDB").Collection(col)

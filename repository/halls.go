@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/tijanadmi/moveginmongo/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,15 +22,21 @@ func (c *HallClient) InitHalls(ctx context.Context) {
 	setupIndexes(ctx, c.Col, "name")
 }
 
+var (
+	ErrHallNotFound = errors.New("hall not found")
+)
+
 // AddHall adds a new hall to the MongoDB collection
-func (c *HallClient) InsertHall(ctx context.Context, hall *models.Hall) error {
+func (c *HallClient) InsertHall(ctx context.Context, hall *models.Hall) (*models.Hall, error) {
 	hall.ID = primitive.NewObjectID()
-	_, err := c.Col.InsertOne(ctx, hall)
+	hall.CreatedAt = time.Now()
+	result, err := c.Col.InsertOne(ctx, hall)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new hall: %w", err))
-		return err
+		return nil, err
 	}
-	return nil
+	hall.ID = result.InsertedID.(primitive.ObjectID)
+	return hall, nil
 }
 
 // ListHalls returns all halls from the MongoDB collection
@@ -49,7 +57,7 @@ func (c *HallClient) ListHalls(ctx context.Context) ([]models.Hall, error) {
 }
 
 // GetHall returns a hall by ID from the MongoDB collection
-func (c *HallClient) SearchHall(ctx context.Context, name string) ([]models.Hall, error) {
+func (c *HallClient) GetHall(ctx context.Context, name string) ([]models.Hall, error) {
 	halls := make([]models.Hall, 0)
 
 	// Provera inicijalizacije kolekcije
@@ -75,7 +83,7 @@ func (c *HallClient) SearchHall(ctx context.Context, name string) ([]models.Hall
 }
 
 // UpdateHall updates a hall by ID in the MongoDB collection
-func (c *HallClient) UpdateHall(ctx context.Context, id string, hall models.Hall) (int, error) {
+func (c *HallClient) UpdateHall(ctx context.Context, id string, hall models.Hall) (models.Hall, error) {
 	objID, _ := primitive.ObjectIDFromHex(id)
 	res, err := c.Col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
 		{"$set", bson.D{
@@ -86,20 +94,29 @@ func (c *HallClient) UpdateHall(ctx context.Context, id string, hall models.Hall
 	})
 	if err != nil {
 		log.Print(fmt.Errorf("could not update hall with id [%s]: %w", id, err))
-		return 0, err
+		return models.Hall{}, err
 	}
+	log.Print(fmt.Errorf("Rezultat updatea je %d", res.MatchedCount))
+	if res.MatchedCount == 0 {
+		return models.Hall{}, ErrHallNotFound
+	}
+	hall.ID = objID
 
-	return int(res.ModifiedCount), nil
+	return hall, nil
 }
 
 // DeleteHall deletes a hall by ID from the MongoDB collection
-func (c *HallClient) DeleteHall(ctx context.Context, id string) (int, error) {
+func (c *HallClient) DeleteHall(ctx context.Context, id string) error {
 	objID, _ := primitive.ObjectIDFromHex(id)
 	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the hall with id [%s]: %w", id, err))
-		return 0, err
+		return err
 	}
 
-	return int(res.DeletedCount), nil
+	if res.DeletedCount == 0 {
+		return ErrHallNotFound
+	}
+
+	return nil
 }

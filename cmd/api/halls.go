@@ -44,7 +44,7 @@ func (server *Server) listHalls(ctx *gin.Context) {
 func (server *Server) searchHall(ctx *gin.Context) {
 
 	name := ctx.Param("name")
-	halls, err := server.store.Hall.SearchHall(ctx, name)
+	halls, err := server.store.Hall.GetHall(ctx, name)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
@@ -72,7 +72,8 @@ func (server *Server) InsertHall(ctx *gin.Context) {
 		return
 	}
 
-	if err := server.store.Hall.InsertHall(ctx, hall); err != nil {
+	hall, err := server.store.Hall.InsertHall(ctx, hall)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
@@ -101,18 +102,13 @@ func (server *Server) UpdateHall(ctx *gin.Context) {
 		return
 	}
 
-	modifiedCount, err := server.store.Hall.UpdateHall(ctx, id, *hall)
+	modifiedHall, err := server.store.Hall.UpdateHall(ctx, id, *hall)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if modifiedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "hall not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, hall)
+	ctx.JSON(http.StatusOK, modifiedHall)
 }
 
 // DeleteHall godoc
@@ -130,14 +126,9 @@ func (server *Server) UpdateHall(ctx *gin.Context) {
 func (server *Server) DeleteHall(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	deletedCount, err := server.store.Hall.DeleteHall(ctx, id)
+	err := server.store.Hall.DeleteHall(ctx, id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-		return
-	}
-
-	if deletedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "hall not found"})
 		return
 	}
 

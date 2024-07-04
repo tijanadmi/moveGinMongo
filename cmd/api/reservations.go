@@ -48,18 +48,6 @@ func (server *Server) GetAllReservationsForUser(ctx *gin.Context) {
 	ReservSeats []string `json:"reservSeats" binding:"required"`
 }*/
 
-// AddReservation godoc
-// @Security bearerAuth
-// @Summary Insert new reservation
-// @Description Insert new reservation
-// @ID AddReservation
-// @Accept  json
-// @Produce  json
-// @Param reservation body models.Reservation true "Create reservation"
-// @Success 201 {array} models.Reservation
-// @Failure 400 {object} apiErrorResponse
-// @Failure 401 {object} apiErrorResponse
-// @Router /reservation [post]
 // func (server *Server) AddReservation(ctx *gin.Context) {
 // 	var req reservationRequest
 // 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -139,6 +127,18 @@ func (server *Server) GetAllReservationsForUser(ctx *gin.Context) {
 // 	ctx.JSON(http.StatusOK, apiResponse{Message: "Reservation added successfully"})
 // }
 
+// AddReservation godoc
+// @Security bearerAuth
+// @Summary Insert new reservation
+// @Description Insert new reservation
+// @ID AddReservation
+// @Accept  json
+// @Produce  json
+// @Param reservation body models.Reservation true "Create reservation"
+// @Success 201 {array} models.Reservation
+// @Failure 400 {object} apiErrorResponse
+// @Failure 401 {object} apiErrorResponse
+// @Router /reservation [post]
 func (server *Server) AddReservation(ctx *gin.Context) {
 	var req reservationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

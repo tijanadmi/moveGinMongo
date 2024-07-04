@@ -36,6 +36,9 @@ func RandomString(n int) string {
 func RandomOwner() string {
 	return RandomString(6)
 }
+func RandomHall() string {
+	return fmt.Sprintf("Sala%d", RandomInt(5, 100))
+}
 
 // RandomMoney generates a random amount of money
 func RandomMoney() int64 {

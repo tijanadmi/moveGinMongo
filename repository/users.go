@@ -9,6 +9,7 @@ import (
 
 	"github.com/tijanadmi/moveginmongo/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -47,16 +48,18 @@ func (c *UsersClient) GetUserByUsername(ctx context.Context, username string) (*
 }
 
 // AddHall adds a new hall to the MongoDB collection
-func (c *UsersClient) InsertUser(ctx context.Context, user *models.User) error {
+func (c *UsersClient) InsertUser(ctx context.Context, user *models.User) (*models.User, error) {
 	user.DateOfCreation = time.Now()
 	user.DateOfLastUpdate = time.Now()
 
-	_, err := c.Col.InsertOne(ctx, user)
+	result, err := c.Col.InsertOne(ctx, user)
+
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new user: %w", err))
-		return err
+		return nil, err
 	}
-	return nil
+	user.ID = result.InsertedID.(primitive.ObjectID)
+	return user, nil
 }
 
 // getUserByUsername traži korisnika po korisničkom imenu
