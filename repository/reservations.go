@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/tijanadmi/moveginmongo/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,36 +18,42 @@ type ReservationClient struct {
 	Col *mongo.Collection
 }
 
-// AddReservation adds a new reservation to the MongoDB collection
-func (c *ReservationClient) InsertReservation(ctx context.Context, reservation *models.Reservation) error {
-	reservation.ID = primitive.NewObjectID()
+var (
+	ErrReservationNotFound = errors.New("reservation not found")
+)
 
-	_, err := c.Col.InsertOne(ctx, reservation)
+// AddReservation adds a new reservation to the MongoDB collection
+func (c *ReservationClient) InsertReservation(ctx context.Context, reservation *models.Reservation) (*models.Reservation, error) {
+	reservation.ID = primitive.NewObjectID()
+	reservation.CreationDate = time.Now()
+	result, err := c.Col.InsertOne(ctx, reservation)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new reservation: %w", err))
-		return err
+		return nil, err
 	}
-	return nil
+	reservation.ID = result.InsertedID.(primitive.ObjectID)
+	return reservation, nil
 }
 
 // GetReservationById returns a reservations based on its ID
-func (c *ReservationClient) GetReservationById(ctx context.Context, id string) (models.Reservation, error) {
-	var reservation models.Reservation
-	objID, _ := primitive.ObjectIDFromHex(id)
-	res := c.Col.FindOne(ctx, bson.M{"_id": objID})
-	if res.Err() != nil {
-		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
-			return reservation, nil
-		}
-		log.Print(fmt.Errorf("error when finding the repertoire [%s]: %q", id, res.Err()))
-		return reservation, res.Err()
+func (c *ReservationClient) GetReservationById(ctx context.Context, id string) (*models.Reservation, error) {
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := res.Decode(&reservation); err != nil {
-		log.Print(fmt.Errorf("error decoding [%s]: %q", id, err))
-		return reservation, err
+	var reservation models.Reservation
+	result := c.Col.FindOne(ctx, bson.M{"_id": objID})
+	err = result.Decode(&reservation)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrReservationNotFound
+		}
+		return nil, err
 	}
-	return reservation, nil
+
+	return &reservation, nil
 }
 
 // GetReservation returns a all reservation based on username
@@ -68,13 +75,19 @@ func (c *ReservationClient) GetAllReservationsForUser(ctx context.Context, usern
 }
 
 // DeleteReservation deletes a reservation based on its ID
-func (c *ReservationClient) DeleteReservation(ctx context.Context, id string) (int, error) {
-	objID, _ := primitive.ObjectIDFromHex(id)
+func (c *ReservationClient) DeleteReservation(ctx context.Context, id string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
 	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the repertoire with id [%s]: %w", id, err))
-		return 0, err
+		return err
+	}
+	if res.DeletedCount == 0 {
+		return ErrReservationNotFound
 	}
 
-	return int(res.DeletedCount), nil
+	return nil
 }

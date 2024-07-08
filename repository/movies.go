@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/tijanadmi/moveginmongo/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,19 +19,26 @@ type MovieClient struct {
 	Col *mongo.Collection
 }
 
+var (
+	ErrMovieNotFound = errors.New("movie not found")
+)
+
 func (c *MovieClient) InitMovies(ctx context.Context) {
 	setupIndexes(ctx, c.Col, "title")
 }
 
 // AddMovie adds a new movie to the MongoDB collection
-func (c *MovieClient) AddMovie(ctx context.Context, movie *models.Movie) error {
+func (c *MovieClient) AddMovie(ctx context.Context, movie *models.Movie) (*models.Movie, error) {
 	movie.ID = primitive.NewObjectID()
-	_, err := c.Col.InsertOne(ctx, movie)
+	movie.CreatedAt = time.Now()
+	result, err := c.Col.InsertOne(ctx, movie)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new movie: %w", err))
-		return err
+		return nil, err
 	}
-	return nil
+	movie.ID = result.InsertedID.(primitive.ObjectID)
+
+	return movie, nil
 }
 
 // ListMovies returns all movies from the MongoDB collection
@@ -50,28 +59,32 @@ func (c *MovieClient) ListMovies(ctx context.Context) ([]models.Movie, error) {
 }
 
 // GetMovie returns a movie by ID from the MongoDB collection
-func (c *MovieClient) GetMovie(ctx context.Context, id string) (models.Movie, error) {
-	var movie models.Movie
-	objID, _ := primitive.ObjectIDFromHex(id)
-	res := c.Col.FindOne(ctx, bson.M{"_id": objID})
-	if res.Err() != nil {
-		if res.Err() == mongo.ErrNoDocuments {
-			return movie, nil
-		}
-		log.Print(fmt.Errorf("error when finding the movie [%s]: %q", id, res.Err()))
-		return movie, res.Err()
+func (c *MovieClient) GetMovie(ctx context.Context, id string) (*models.Movie, error) {
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := res.Decode(&movie); err != nil {
-		log.Print(fmt.Errorf("error decoding [%s]: %q", id, err))
-		return movie, err
+	var movie models.Movie
+	result := c.Col.FindOne(ctx, bson.M{"_id": objID})
+	err = result.Decode(&movie)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrMovieNotFound
+		}
+		return nil, err
 	}
-	return movie, nil
+
+	return &movie, nil
 }
 
 // UpdateMovie updates a movie by ID in the MongoDB collection
-func (c *MovieClient) UpdateMovie(ctx context.Context, id string, movie models.Movie) (int, error) {
-	objID, _ := primitive.ObjectIDFromHex(id)
+func (c *MovieClient) UpdateMovie(ctx context.Context, id string, movie models.Movie) (*models.Movie, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
 	res, err := c.Col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
 		{"$set", bson.D{
 			{"title", movie.Title},
@@ -87,22 +100,35 @@ func (c *MovieClient) UpdateMovie(ctx context.Context, id string, movie models.M
 	})
 	if err != nil {
 		log.Print(fmt.Errorf("could not update movie with id [%s]: %w", id, err))
-		return 0, err
+		return &models.Movie{}, err
 	}
 
-	return int(res.ModifiedCount), nil
+	if res.MatchedCount == 0 {
+		return &models.Movie{}, ErrHallNotFound
+	}
+	movie.ID = objID
+
+	return &movie, nil
 }
 
 // DeleteMovie deletes a movie by ID from the MongoDB collection
-func (c *MovieClient) DeleteMovie(ctx context.Context, id string) (int, error) {
-	objID, _ := primitive.ObjectIDFromHex(id)
+func (c *MovieClient) DeleteMovie(ctx context.Context, id string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the movie with id [%s]: %w", id, err))
-		return 0, err
+		return err
 	}
 
-	return int(res.DeletedCount), nil
+	if res.DeletedCount == 0 {
+		return ErrMovieNotFound
+	}
+
+	return nil
 }
 
 // GetHall returns a hall by ID from the MongoDB collection

@@ -18,24 +18,31 @@ type RepertoireClient struct {
 	Col *mongo.Collection
 }
 
+var (
+	ErrRepertoireNotFound = errors.New("repertoire not found")
+)
+
 func (c *RepertoireClient) InitRepertoire(ctx context.Context) {
 	setupIndexes(ctx, c.Col, "movieId")
 }
 
 // AddRepertoire adds a new repertoire to the MongoDB collection
-func (c *RepertoireClient) AddRepertoire(ctx context.Context, repertoire *models.Repertoire) error {
+func (c *RepertoireClient) AddRepertoire(ctx context.Context, repertoire *models.Repertoire) (*models.Repertoire, error) {
 	repertoire.ID = primitive.NewObjectID()
+	repertoire.CreatedAt = time.Now()
 	// Provera da li je numOfResTickets postavljen, ako nije postavi na 0
 	if repertoire.NumOfResTickets == 0 {
 		repertoire.NumOfResTickets = 0
 	}
 	fmt.Println("Repository NumOfResTickets", repertoire.NumOfResTickets)
-	_, err := c.Col.InsertOne(ctx, repertoire)
+	result, err := c.Col.InsertOne(ctx, repertoire)
 	if err != nil {
 		log.Print(fmt.Errorf("could not add new repertoire: %w", err))
-		return err
+		return nil, err
 	}
-	return nil
+
+	repertoire.ID = result.InsertedID.(primitive.ObjectID)
+	return repertoire, nil
 }
 
 // ListRepertoires returns all repertoires from the MongoDB collection
@@ -56,23 +63,24 @@ func (c *RepertoireClient) ListRepertoires(ctx context.Context) ([]models.Repert
 }
 
 // GetRepertoire returns a repertoire based on its ID
-func (c *RepertoireClient) GetRepertoire(ctx context.Context, id string) (models.Repertoire, error) {
-	var repertoire models.Repertoire
-	objID, _ := primitive.ObjectIDFromHex(id)
-	res := c.Col.FindOne(ctx, bson.M{"_id": objID})
-	if res.Err() != nil {
-		if errors.Is(res.Err(), mongo.ErrNoDocuments) {
-			return repertoire, nil
-		}
-		log.Print(fmt.Errorf("error when finding the repertoire [%s]: %q", id, res.Err()))
-		return repertoire, res.Err()
+func (c *RepertoireClient) GetRepertoire(ctx context.Context, id string) (*models.Repertoire, error) {
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := res.Decode(&repertoire); err != nil {
-		log.Print(fmt.Errorf("error decoding [%s]: %q", id, err))
-		return repertoire, err
+	var repertoire models.Repertoire
+	result := c.Col.FindOne(ctx, bson.M{"_id": objID})
+	err = result.Decode(&repertoire)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrRepertoireNotFound
+		}
+		return nil, err
 	}
-	return repertoire, nil
+
+	return &repertoire, nil
 }
 
 // GetRepertoire returns a repertoire based on its ID
@@ -128,8 +136,11 @@ func (c *RepertoireClient) GetAllRepertoireForMovie(ctx context.Context, movieId
 }
 
 // UpdateRepertoire updates a repertoire based on its ID
-func (c *RepertoireClient) UpdateRepertoire(ctx context.Context, id string, repertoire models.Repertoire) (int, error) {
-	objID, _ := primitive.ObjectIDFromHex(id)
+func (c *RepertoireClient) UpdateRepertoire(ctx context.Context, id string, repertoire models.Repertoire) (*models.Repertoire, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return &models.Repertoire{}, err
+	}
 	res, err := c.Col.UpdateOne(ctx, bson.M{"_id": objID}, bson.D{
 		{"$set", bson.D{
 			{"movieId", repertoire.MovieID},
@@ -143,32 +154,53 @@ func (c *RepertoireClient) UpdateRepertoire(ctx context.Context, id string, repe
 	})
 	if err != nil {
 		log.Print(fmt.Errorf("could not update repertoire with id [%s]: %w", id, err))
-		return 0, err
+		return &models.Repertoire{}, err
 	}
 
-	return int(res.ModifiedCount), nil
+	if res.MatchedCount == 0 {
+		return &models.Repertoire{}, ErrRepertoireNotFound
+	}
+	repertoire.ID = objID
+
+	return &repertoire, nil
 }
 
 // DeleteRepertoire deletes a repertoire based on its ID
-func (c *RepertoireClient) DeleteRepertoire(ctx context.Context, id string) (int, error) {
-	objID, _ := primitive.ObjectIDFromHex(id)
+func (c *RepertoireClient) DeleteRepertoire(ctx context.Context, id string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the repertoire with id [%s]: %w", id, err))
-		return 0, err
+		return err
 	}
 
-	return int(res.DeletedCount), nil
+	if res.DeletedCount == 0 {
+		return ErrRepertoireNotFound
+	}
+
+	return nil
 }
 
 // DeleteRepertoire deletes a repertoire based on its ID
-func (c *RepertoireClient) DeleteRepertoireForMovie(ctx context.Context, movieId string) (int, error) {
-	movieID, _ := primitive.ObjectIDFromHex(movieId)
+func (c *RepertoireClient) DeleteRepertoireForMovie(ctx context.Context, movieId string) error {
+	movieID, err := primitive.ObjectIDFromHex(movieId)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.Col.DeleteMany(ctx, bson.M{"movieId": movieID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the repertoire with id [%s]: %w", movieId, err))
-		return 0, err
+		return err
 	}
 
-	return int(res.DeletedCount), nil
+	if res.DeletedCount == 0 {
+		return ErrRepertoireNotFound
+	}
+
+	return nil
 }

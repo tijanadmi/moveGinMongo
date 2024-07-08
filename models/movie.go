@@ -17,6 +17,7 @@ type Movie struct {
 	Screening  time.Time          `bson:"screening,omitempty" json:"screening,omitempty"`
 	Plot       string             `bson:"plot,omitempty" json:"plot,omitempty"`
 	Poster     string             `bson:"poster,omitempty" json:"poster,omitempty"`
+	CreatedAt  time.Time          `bson:"creation_date,omitempty" json:"creation_date,omitempty"`
 	Screenings []Screening        `bson:"screenings" json:"screenings,omitempty"`
 }
 

@@ -73,7 +73,8 @@ func (server *Server) InsertMovie(ctx *gin.Context) {
 		return
 	}
 
-	if err := server.store.Movie.AddMovie(ctx, movie); err != nil {
+	movie, err := server.store.Movie.AddMovie(ctx, movie)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
@@ -102,18 +103,13 @@ func (server *Server) UpdateMovie(ctx *gin.Context) {
 		return
 	}
 
-	modifiedCount, err := server.store.Movie.UpdateMovie(ctx, id, *movie)
+	modifiedMovie, err := server.store.Movie.UpdateMovie(ctx, id, *movie)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if modifiedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "movie not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, movie)
+	ctx.JSON(http.StatusOK, modifiedMovie)
 }
 
 // DeleteMovie godoc
@@ -131,14 +127,9 @@ func (server *Server) UpdateMovie(ctx *gin.Context) {
 func (server *Server) DeleteMovie(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	deletedCount, err := server.store.Movie.DeleteMovie(ctx, id)
+	err := server.store.Movie.DeleteMovie(ctx, id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-		return
-	}
-
-	if deletedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "movie not found"})
 		return
 	}
 

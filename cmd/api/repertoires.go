@@ -128,7 +128,8 @@ func (server *Server) AddRepertoire(ctx *gin.Context) {
 	// Update the date field with the parsed time.Time value
 	repertoire.Date = dateValue
 
-	if err := server.store.Repertoire.AddRepertoire(ctx, repertoire); err != nil {
+	repertoire, err = server.store.Repertoire.AddRepertoire(ctx, repertoire)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
@@ -156,14 +157,9 @@ func (server *Server) UpdateRepertoire(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, apiErrorResponse{Error: fmt.Sprintf(" invalid input: %s", err.Error())})
 		return
 	}
-	modifiedCount, err := server.store.Repertoire.UpdateRepertoire(ctx, id, *repertoire)
+	repertoire, err := server.store.Repertoire.UpdateRepertoire(ctx, id, *repertoire)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-		return
-	}
-
-	if modifiedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "repertoires not found"})
 		return
 	}
 
@@ -185,18 +181,13 @@ func (server *Server) UpdateRepertoire(ctx *gin.Context) {
 func (server *Server) DeleteRepertoire(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	deletedCount, err := server.store.Repertoire.DeleteRepertoire(ctx, id)
+	err := server.store.Repertoire.DeleteRepertoire(ctx, id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if deletedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "repertoires not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, apiResponse{Message: fmt.Sprintf("%d repertoire has been deleted", deletedCount)})
+	ctx.JSON(http.StatusOK, apiResponse{Message: fmt.Sprintf("repertoire has been deleted")})
 }
 
 // DeleteRepertoireForMovie godoc
@@ -214,17 +205,11 @@ func (server *Server) DeleteRepertoire(ctx *gin.Context) {
 func (server *Server) DeleteRepertoireForMovie(ctx *gin.Context) {
 	movieId := ctx.Query("movie_id")
 
-	deletedCount, err := server.store.Repertoire.DeleteRepertoireForMovie(ctx, movieId)
+	err := server.store.Repertoire.DeleteRepertoireForMovie(ctx, movieId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
 		return
 	}
 
-	if deletedCount == 0 {
-		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "repertoires not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, apiResponse{Message: fmt.Sprintf("%d repertoire has been deleted", deletedCount)})
-
+	ctx.JSON(http.StatusOK, apiResponse{Message: fmt.Sprintf("repertoire has been deleted")})
 }

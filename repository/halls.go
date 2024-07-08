@@ -56,7 +56,7 @@ func (c *HallClient) ListHalls(ctx context.Context) ([]models.Hall, error) {
 	return halls, nil
 }
 
-// GetHall returns a hall by ID from the MongoDB collection
+// GetHall returns a hall by Name from the MongoDB collection
 func (c *HallClient) GetHall(ctx context.Context, name string) ([]models.Hall, error) {
 	halls := make([]models.Hall, 0)
 
@@ -79,6 +79,26 @@ func (c *HallClient) GetHall(ctx context.Context, name string) ([]models.Hall, e
 	}
 
 	return halls, nil
+
+}
+
+func (c *HallClient) GetHallById(ctx context.Context, id string) (*models.Hall, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var hall models.Hall
+	result := c.Col.FindOne(ctx, bson.M{"_id": objID})
+	err = result.Decode(&hall)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrHallNotFound
+		}
+		return nil, err
+	}
+
+	return &hall, nil
 
 }
 
@@ -107,7 +127,11 @@ func (c *HallClient) UpdateHall(ctx context.Context, id string, hall models.Hall
 
 // DeleteHall deletes a hall by ID from the MongoDB collection
 func (c *HallClient) DeleteHall(ctx context.Context, id string) error {
-	objID, _ := primitive.ObjectIDFromHex(id)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.Col.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Print(fmt.Errorf("error deleting the hall with id [%s]: %w", id, err))

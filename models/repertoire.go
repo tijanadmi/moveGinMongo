@@ -16,5 +16,6 @@ type Repertoire struct {
 	Hall            string             `bson:"hall,omitempty" json:"hall,omitempty"`
 	NumOfTickets    int                `bson:"numOfTickets,omitempty" json:"numOfTickets,omitempty"`
 	NumOfResTickets int                `bson:"numOfResTickets" json:"numOfResTickets"`
+	CreatedAt       time.Time          `bson:"creation_date,omitempty" json:"creation_date,omitempty"`
 	ReservSeats     []string           `bson:"reservSeats,omitempty" json:"reservSeats,omitempty"`
 }

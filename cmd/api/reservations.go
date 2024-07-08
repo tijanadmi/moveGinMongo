@@ -39,94 +39,6 @@ func (server *Server) GetAllReservationsForUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, repertoires)
 }
 
-/*type reservationRequest struct {
-	Username    string   `json:"username" binding:"required"`
-	MovieID     string   `json:"movieId" binding:"required"`
-	Date        string   `json:"date" binding:"required"`
-	Time        string   `json:"time" binding:"required"`
-	Hall        string   `json:"hall" binding:"required"`
-	ReservSeats []string `json:"reservSeats" binding:"required"`
-}*/
-
-// func (server *Server) AddReservation(ctx *gin.Context) {
-// 	var req reservationRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, apiErrorResponse{Error: "Invalid input"})
-// 		return
-// 	}
-
-// 	dateValue, err := util.ParseDate(req.Date)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusBadRequest, apiErrorResponse{Error: "Error parsing date"})
-// 		return
-// 	}
-// 	movie, err := server.store.Movie.GetMovie(ctx, req.MovieID)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-// 		return
-// 	}
-
-// 	user, err := server.store.Users.GetUserByUsername(ctx, req.Username)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-// 		return
-// 	}
-
-// 	var repertoire models.Repertoire
-// 	repertoire, err = server.store.Repertoire.GetRepertoireByMovieDateTimeHall(ctx, req.MovieID, dateValue, req.Time, req.Hall)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-// 		return
-// 	}
-
-// 	numOfSeats := len(req.ReservSeats)
-
-// 	if repertoire.NumOfTickets < repertoire.NumOfResTickets+numOfSeats {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "not repertoire by movieId, date, time and hall"})
-// 		return
-
-// 	}
-
-// 	updatedSeats := append(repertoire.ReservSeats, req.ReservSeats...)
-// 	sort.Strings(updatedSeats)
-// 	repertoire.ReservSeats = updatedSeats
-// 	repertoire.NumOfResTickets = repertoire.NumOfResTickets + numOfSeats
-
-// 	/***** Update Repertoire ***/
-// 	modifiedCount, err := server.store.Repertoire.UpdateRepertoire(ctx, repertoire.ID.Hex(), repertoire)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-// 		return
-// 	}
-
-// 	if modifiedCount == 0 {
-// 		ctx.JSON(http.StatusNotFound, apiErrorResponse{Error: "repertoire not found"})
-// 		return
-// 	}
-
-// 	/***** Isert Reservation ****/
-// 	sort.Strings(req.ReservSeats)
-// 	reservation := models.Reservation{
-// 		Username:      user.Username,
-// 		UserID:        user.ID,
-// 		MovieID:       movie.ID,
-// 		MovieTitle:    movie.Title,
-// 		RepertoiresID: repertoire.ID,
-// 		Date:          repertoire.Date,
-// 		Time:          repertoire.Time,
-// 		Hall:          repertoire.Hall,
-// 		CreationDate:  time.Now(),
-// 		ReservSeats:   req.ReservSeats,
-// 	}
-
-// 	if err := server.store.Reservation.InsertReservation(ctx, &reservation); err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, apiErrorResponse{Error: err.Error()})
-// 		return
-// 	}
-
-// 	ctx.JSON(http.StatusOK, apiResponse{Message: "Reservation added successfully"})
-// }
-
 // AddReservation godoc
 // @Security bearerAuth
 // @Summary Insert new reservation
@@ -197,17 +109,15 @@ func (server *Server) AddReservation(ctx *gin.Context) {
 		repertoire.NumOfResTickets = repertoire.NumOfResTickets + numOfSeats
 
 		// Ažuriranje repertoara u okviru transakcije
-		modifiedCount, err := server.store.Repertoire.UpdateRepertoire(sessionCtx, repertoire.ID.Hex(), repertoire)
+		_, err = server.store.Repertoire.UpdateRepertoire(sessionCtx, repertoire.ID.Hex(), repertoire)
 		if err != nil {
 			return nil, err
-		}
-		if modifiedCount == 0 {
-			return nil, errors.New("repertoire not found")
 		}
 
 		// Kreiranje rezervacije
 		sort.Strings(req.ReservSeats)
-		reservation := models.Reservation{
+		var reservation *models.Reservation
+		reservation = &models.Reservation{
 			Username:      user.Username,
 			UserID:        user.ID,
 			MovieID:       movie.ID,
@@ -221,7 +131,8 @@ func (server *Server) AddReservation(ctx *gin.Context) {
 		}
 
 		// Unos rezervacije u okviru transakcije
-		if err := server.store.Reservation.InsertReservation(sessionCtx, &reservation); err != nil {
+		reservation, err = server.store.Reservation.InsertReservation(sessionCtx, reservation)
+		if err != nil {
 			return nil, err
 		}
 
@@ -283,25 +194,19 @@ func (server *Server) CancelReservation(ctx *gin.Context) {
 		repertoire.NumOfResTickets = len(difSeats)
 
 		/*** Update repertoire ****/
-		modifiedCount, err := server.store.Repertoire.UpdateRepertoire(ctx, reservation.RepertoiresID.Hex(), repertoire)
+		_, err = server.store.Repertoire.UpdateRepertoire(ctx, reservation.RepertoiresID.Hex(), *repertoire)
 		if err != nil {
 			return nil, err
 
-		}
-		if modifiedCount == 0 {
-			return nil, errors.New("repertoire not found for update")
 		}
 
 		/**** Delete reservation ****/
-		deletedCount, err := server.store.Reservation.DeleteReservation(ctx, id)
+		err = server.store.Reservation.DeleteReservation(ctx, id)
 		if err != nil {
 			return nil, err
 		}
 
-		if deletedCount == 0 {
-			return nil, errors.New("reservation not found")
-		}
-		return deletedCount, nil
+		return 0, nil
 
 	}, txnOptions)
 
